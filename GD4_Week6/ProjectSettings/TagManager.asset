@@ -8,6 +8,7 @@ TagManager:
   - Wine
   - Bomb
   - Food
+  - Music
   layers:
   - Default
   - TransparentFX

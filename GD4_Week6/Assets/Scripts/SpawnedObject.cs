@@ -5,8 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class SpawnedObject : MonoBehaviour
 {
-    public Vector2 forceRange = new Vector2(5f, 10f);
-    public Vector2 torqueRange = new Vector2(10f, 30f);
+    private Vector2 forceRange = new Vector2(10f, 15f);
+    private Vector2 torqueRange = new Vector2(-1f, 1f);
     private Rigidbody rig;
     private GameManager gamemanager;
     public GameObject splosionPrefab;
@@ -14,7 +14,9 @@ public class SpawnedObject : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //Get gamemanager
         gamemanager = FindObjectOfType<GameManager>();
+        //Set object forces
         rig = GetComponent<Rigidbody>();
         rig.AddForce(Vector3.up * Random.Range(forceRange.x, forceRange.y), ForceMode.Impulse);
         rig.AddTorque(new Vector3(Random.Range(torqueRange.x, torqueRange.y), Random.Range(torqueRange.x, torqueRange.y),Random.Range(torqueRange.x, torqueRange.y)),ForceMode.Impulse);
@@ -24,6 +26,12 @@ public class SpawnedObject : MonoBehaviour
     {
         if(transform.position.y < -3f)
         {
+            //Destroy object if fallen below screen limit
+            if (transform.CompareTag("Food"))
+            {
+                //And lose life if you missed a 'good' item
+                gamemanager.LoseLife();
+            }
             Destroy(gameObject);
         }
     }
@@ -36,15 +44,25 @@ public class SpawnedObject : MonoBehaviour
             if (transform.CompareTag("Food"))
             {
                 Debug.Log("Score++");
-                gamemanager.HitFood(rig.velocity, gameObject, 0);
+                gamemanager.HitFood(gameObject, 0);
+
                 //Add score if food
-                gamemanager.score++;
+                int scoreToAdd = 1;
+                /*if(transform.name == "AppleGreen")
+                {
+                    scoreToAdd = 2;
+                }
+                else if (transform.name == "AppleRed")
+                {
+                    scoreToAdd = 3;
+                }*/
+                gamemanager.AddScore(scoreToAdd);
             }
             else if (transform.CompareTag("Eye"))
             {
                 Debug.Log("Lost Life - Eye");
                 //If hit an eye, lose a life, and make screen redder
-                gamemanager.HitFood(rig.velocity, gameObject, 1); 
+                gamemanager.HitFood(gameObject, 1); 
                 gamemanager.EyeHit();
                 gamemanager.LoseLife();
             }
@@ -52,7 +70,7 @@ public class SpawnedObject : MonoBehaviour
             {
                 Debug.Log("Lost Life - Wine");
                 //If hit wine, lose a life, and make screen drunker hehe
-                gamemanager.HitFood(rig.velocity, gameObject, 1);
+                gamemanager.HitFood(gameObject, 1);
                 gamemanager.WineHit();
                 gamemanager.LoseLife();
             }
@@ -60,7 +78,7 @@ public class SpawnedObject : MonoBehaviour
             {
                 Debug.Log("Lost Life - Bomb");
                 //If hit a bomb, lose a life, and call BombHit which does both effects
-                gamemanager.HitFood(rig.velocity, gameObject, 2); 
+                gamemanager.HitFood(gameObject, 2); 
                 gamemanager.BombHit();
                 gamemanager.LoseLife();
             }

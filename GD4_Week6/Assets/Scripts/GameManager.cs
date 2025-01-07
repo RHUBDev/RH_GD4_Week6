@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -18,6 +20,7 @@ public class GameManager : MonoBehaviour
     private Color color0 = new Color(1, 1, 1, 1);
     private Color color1 = new Color(1f, 0.5f, 0.5f, 1f);
     private Color color2 = new Color(1f, 0f, 0f, 1f);
+    private Color color3 = new Color(0f, 0f, 0f, 1f);
     private int eyehit = 0;
     private int winehit = 0;
     private bool lensing = false;
@@ -26,11 +29,26 @@ public class GameManager : MonoBehaviour
     private float speed = 1f;
     private Color usedColor;
     public GameObject[] splosionPrefabs;
+    public TMP_Text scoreText;
+    public TMP_Text livesText;
+    public GameObject gameOverText;
+    public TMP_Text highScoreText;
+    public Transform foodParent;
+    public GameObject menuButton;
+    public GameObject retryButton;
+    public GameObject[] hearts;
+    public AudioClip punchSound;
+    public AudioClip popSound;
+    public AudioSource audioSource;
+    public ParticleSystem trail;
+    private Camera cam;
+    public GameObject slicesound;
+    private float heartGrowRate = 1.7f;
 
     // Start is called before the first frame update
     void Start()
     {
-        //lensing = true;
+        cam = Camera.main;
         usedColor = color0;
         //Start spawning objects
         StartCoroutine(SpawnObjects());
@@ -43,10 +61,27 @@ public class GameManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             mousing = true;
+            //also start mouse trail and slice sounds
+            trail.gameObject.SetActive(false);
+            trail.gameObject.SetActive(true);
+            var emiss = trail.emission;
+            emiss.enabled = true;
+            slicesound.SetActive(true);
         }
         if (Input.GetMouseButtonUp(0))
         {
+            //stop mouse trail and sounds
             mousing = false;
+            var emiss = trail.emission;
+            emiss.enabled = false;
+            slicesound.SetActive(false);
+        }
+
+        if (mousing)
+        {
+           //Get mouse position and set mouse trail position
+            Vector3 mousepos = Input.mousePosition;
+            trail.transform.parent.position = cam.ScreenToWorldPoint(new Vector3(mousepos.x, mousepos.y,10f));
         }
 
         if (volume != null)
@@ -76,29 +111,21 @@ public class GameManager : MonoBehaviour
         //While alive keep spawning objects
         while (lives > 0)
         {
+            Instantiate(spawnObjects[Random.Range(0, spawnObjects.Count)], new Vector3(Random.Range(-xRange, xRange), -1, 0), Quaternion.identity, foodParent);
             yield return new WaitForSeconds(1);
-            Instantiate(spawnObjects[Random.Range(0, spawnObjects.Count)], new Vector3(Random.Range(-xRange, xRange), -1, 0), Quaternion.identity);
         }
     }
 
-    public void HitFood(Vector3 objectVelocity, GameObject food, int splosionnum)
+    #region HitObjectEffects
+    public void HitFood(GameObject food, int splosionnum)
     {
+        //spawn explosions
         float inputx = Input.GetAxis("Mouse X");
         float inputy = Input.GetAxis("Mouse Y");
-        Vector2 mousevect = new Vector2(inputx, inputy);
         
         Quaternion splosionRotation = Quaternion.LookRotation(new Vector3(inputx, inputy,0).normalized);
-        //Quaternion splosionRotation = Quaternion.LookRotation(objectVelocity);
-        GameObject splosion = Instantiate(splosionPrefabs[splosionnum], food.transform.position, splosionRotation);
-        //splosion.transform.
-        //ParticleSystem parts = splosion.GetComponent<ParticleSystem>();
-        //parts
-    }
-
-    public void LoseLife()
-    {
-        //Lose a life
-        lives--;
+        Instantiate(splosionPrefabs[splosionnum], food.transform.position, splosionRotation);
+        audioSource.PlayOneShot(punchSound);
     }
 
     public void EyeHit()
@@ -145,5 +172,86 @@ public class GameManager : MonoBehaviour
         //If hit a bomb, increase both effects
         EyeHit();
         WineHit();
+    }
+    #endregion
+
+    #region ScoresAndLives
+    public void AddScore(int scoreToAdd)
+    {
+        //Add to score
+        score += scoreToAdd;
+        scoreText.text = "Score: " + score;
+    }
+
+    public void LoseLife()
+    {
+        //Lose a life
+        lives--;
+        audioSource.PlayOneShot(popSound, 0.4f);
+        StartCoroutine(LoseHeart(hearts[lives].GetComponent<RectTransform>()));
+        
+        //livesText.text = "Lives: " + lives;
+        if (lives <= 0)
+        {
+            //Show end game UI
+            gameOverText.SetActive(true);
+            menuButton.SetActive(true);
+            retryButton.SetActive(true);
+            DoHighScores();
+
+            //Set screen to black
+            usedColor = color3;
+
+            //Destroy all current objects
+            foreach (Transform tran in foodParent)
+            {
+                Destroy(tran.gameObject);
+            }
+        }
+    }
+
+    IEnumerator LoseHeart(RectTransform heart)
+    {
+        while (heart.localScale.x < 3)
+        {
+            float growAmount = Time.deltaTime * heartGrowRate;
+            heart.localScale += new Vector3(growAmount, growAmount, growAmount);
+            yield return null;
+        }
+        heart.gameObject.SetActive(false);
+    }
+
+    void DoHighScores()
+    {
+        //Compare high scores, show UI, and save new high score if you beat it
+        int highscore = 0;
+        if (PlayerPrefs.HasKey("HighScore"))
+        {
+            highscore = PlayerPrefs.GetInt("HighScore");
+        }
+        if (score > highscore)
+        {
+            //beat high score
+            highScoreText.text = "New high score!";
+            PlayerPrefs.SetInt("HighScore", score);
+        }
+        else
+        {
+            //failed to beat high score
+            highScoreText.text = "Score to beat: " + highscore;
+        }
+    }
+    #endregion
+
+    public void Retry()
+    {
+        //Reload level
+        SceneManager.LoadScene("GameScene");
+    }
+
+    public void Menu()
+    {
+        //Go back to menu scene
+        SceneManager.LoadScene("MenuScene");
     }
 }
