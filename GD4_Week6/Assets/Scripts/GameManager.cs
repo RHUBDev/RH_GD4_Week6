@@ -44,6 +44,8 @@ public class GameManager : MonoBehaviour
     private Camera cam;
     public GameObject slicesound;
     private float heartGrowRate = 1.7f;
+    public GameObject pausePanel;
+    private float objectSpawnRate = 0.5f;
 
     // Start is called before the first frame update
     void Start()
@@ -57,51 +59,61 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Get mouse button 0 input and set 'mousing' accordingly
-        if (Input.GetMouseButtonDown(0))
+        if (Time.timeScale > 0)
         {
-            mousing = true;
-            //also start mouse trail and slice sounds
-            trail.gameObject.SetActive(false);
-            trail.gameObject.SetActive(true);
-            var emiss = trail.emission;
-            emiss.enabled = true;
-            slicesound.SetActive(true);
-        }
-        if (Input.GetMouseButtonUp(0))
-        {
-            //stop mouse trail and sounds
-            mousing = false;
-            var emiss = trail.emission;
-            emiss.enabled = false;
-            slicesound.SetActive(false);
-        }
-
-        if (mousing)
-        {
-           //Get mouse position and set mouse trail position
-            Vector3 mousepos = Input.mousePosition;
-            trail.transform.parent.position = cam.ScreenToWorldPoint(new Vector3(mousepos.x, mousepos.y,10f));
-        }
-
-        if (volume != null)
-        {
-            //I googled how to do these Global Volume changes
-            volume.profile.TryGet(out ColorAdjustments colorAdjustments);
-            if (colorAdjustments != null)
+            //Pause if 'P' pressed
+            if (Input.GetKeyDown(KeyCode.P))
             {
-                colorAdjustments.colorFilter.value = usedColor;
+                Time.timeScale = 0.0f;
+                pausePanel.SetActive(true);
             }
-        }
 
-        if (lensing)
-        {
-            volume.profile.TryGet(out LensDistortion lensDistortion);
-            if (lensDistortion != null)
+            //Get mouse button 0 input and set 'mousing' accordingly
+            if (Input.GetMouseButtonDown(0))
             {
-                //I googled how to loop the lens distortion
-                float t = (Mathf.Sin(Time.time * speed) + 1) * 0.5f;
-                lensDistortion.intensity.value = Mathf.Lerp(minDistortion, maxDistortion, t);
+                mousing = true;
+                //also start mouse trail and slice sounds
+                trail.gameObject.SetActive(false);
+                trail.gameObject.SetActive(true);
+                var emiss = trail.emission;
+                emiss.enabled = true;
+                slicesound.SetActive(true);
+            }
+            if (Input.GetMouseButtonUp(0))
+            {
+                //stop mouse trail and sounds
+                mousing = false;
+                var emiss = trail.emission;
+                emiss.enabled = false;
+                slicesound.SetActive(false);
+            }
+
+            if (mousing)
+            {
+                //Get mouse position and set mouse trail position
+                Vector3 mousepos = Input.mousePosition;
+                trail.transform.parent.position = cam.ScreenToWorldPoint(new Vector3(mousepos.x, mousepos.y, 10f));
+            }
+
+            if (volume != null)
+            {
+                //I googled how to do these Global Volume changes
+                volume.profile.TryGet(out ColorAdjustments colorAdjustments);
+                if (colorAdjustments != null)
+                {
+                    colorAdjustments.colorFilter.value = usedColor;
+                }
+            }
+
+            if (lensing)
+            {
+                volume.profile.TryGet(out LensDistortion lensDistortion);
+                if (lensDistortion != null)
+                {
+                    //I googled how to loop the lens distortion
+                    float t = (Mathf.Sin(Time.time * speed) + 1) * 0.5f;
+                    lensDistortion.intensity.value = Mathf.Lerp(minDistortion, maxDistortion, t);
+                }
             }
         }
     }
@@ -112,7 +124,7 @@ public class GameManager : MonoBehaviour
         while (lives > 0)
         {
             Instantiate(spawnObjects[Random.Range(0, spawnObjects.Count)], new Vector3(Random.Range(-xRange, xRange), -1, 0), Quaternion.identity, foodParent);
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(objectSpawnRate);
         }
     }
 
@@ -243,6 +255,13 @@ public class GameManager : MonoBehaviour
     }
     #endregion
 
+    public void Continue()
+    {
+        //Unpause
+        pausePanel.SetActive(false);
+        Time.timeScale = 1.0f;
+    }
+    
     public void Retry()
     {
         //Reload level
