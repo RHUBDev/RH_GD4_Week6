@@ -45,11 +45,24 @@ public class GameManager : MonoBehaviour
     public GameObject slicesound;
     private float heartGrowRate = 1.7f;
     public GameObject pausePanel;
-    private float objectSpawnRate = 0.5f;
-
+    private Vector2 objectSpawnRate = new Vector2(1f, 1f);
+    private int difficulty = 1;
     // Start is called before the first frame update
     void Start()
     {
+        difficulty = PlayerPrefs.GetInt("Difficulty");
+        if(difficulty == 1)
+        {
+            objectSpawnRate = new Vector2(1f, 1f);
+        }
+        else if (difficulty == 2)
+        {
+            objectSpawnRate = new Vector2(0.5f, 0.7f);
+        }
+        else if (difficulty == 3)
+        {
+            objectSpawnRate = new Vector2(0.3f, 0.4f);
+        }
         cam = Camera.main;
         usedColor = color0;
         //Start spawning objects
@@ -124,7 +137,8 @@ public class GameManager : MonoBehaviour
         while (lives > 0)
         {
             Instantiate(spawnObjects[Random.Range(0, spawnObjects.Count)], new Vector3(Random.Range(-xRange, xRange), -1, 0), Quaternion.identity, foodParent);
-            yield return new WaitForSeconds(objectSpawnRate);
+            float theWait = Random.Range(objectSpawnRate.x, objectSpawnRate.y);
+            yield return new WaitForSeconds(theWait);
         }
     }
 
@@ -237,15 +251,16 @@ public class GameManager : MonoBehaviour
     {
         //Compare high scores, show UI, and save new high score if you beat it
         int highscore = 0;
-        if (PlayerPrefs.HasKey("HighScore"))
+
+        if (PlayerPrefs.HasKey("HighScore" + difficulty))
         {
-            highscore = PlayerPrefs.GetInt("HighScore");
+            highscore = PlayerPrefs.GetInt("HighScore" + difficulty);
         }
         if (score > highscore)
         {
             //beat high score
             highScoreText.text = "New high score!";
-            PlayerPrefs.SetInt("HighScore", score);
+            PlayerPrefs.SetInt("HighScore" + difficulty, score);
         }
         else
         {

@@ -18,6 +18,9 @@ public class Menu : MonoBehaviour
     public TMP_Text musicsliderText;
     public Slider sfxslider;
     public TMP_Text sfxsliderText;
+    public GameObject middleUIPanel;
+    public GameObject difficultyPanel;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -28,13 +31,23 @@ public class Menu : MonoBehaviour
             music = Instantiate(musicPrefab, transform.position, Quaternion.identity);
         }
 
-        //Show high score
+        //Show high scores
         int highscore = 0;
-        if (PlayerPrefs.HasKey("HighScore"))
+        int highscore2 = 0;
+        int highscore3 = 0;
+        if (PlayerPrefs.HasKey("HighScore1"))
         {
-            highscore = PlayerPrefs.GetInt("HighScore");
+            highscore = PlayerPrefs.GetInt("HighScore1");
         }
-        highScoreText.text = "High Score: " + highscore;
+        if (PlayerPrefs.HasKey("HighScore2"))
+        {
+            highscore2 = PlayerPrefs.GetInt("HighScore2");
+        }
+        if (PlayerPrefs.HasKey("HighScore3"))
+        {
+            highscore3 = PlayerPrefs.GetInt("HighScore3");
+        }
+        highScoreText.text = "Easy High Score: " + highscore + "\nNormal High Score: " + highscore2 + "\nHard High Score: " + highscore3;
         //Set coloured titles (Fruit Binger)
         titleText.text = "<color=green>F</color><color=red>r</color><color=yellow>u</color><color=purple>i</color><color=orange>t</color> <color=green>B</color><color=red>i</color><color=yellow>n</color><color=purple>g</color><color=orange>e</color><color=green>r</color>";
         
@@ -98,8 +111,9 @@ public class Menu : MonoBehaviour
 
     public void PlayGame()
     {
-        //Load the game!
-        SceneManager.LoadScene("GameScene");
+        //Show difficulty buttons
+        middleUIPanel.SetActive(false);
+        difficultyPanel.SetActive(true);
     }
 
     public void HowToPlay()
